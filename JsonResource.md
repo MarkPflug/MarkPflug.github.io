@@ -37,6 +37,10 @@ In this example, we are defining two string resources that will be used for labe
 
 The first thing we'll do is create our MSBuild Task. A Task is imply a class that implements the ITask interface. Usually, this is accomplished by deriving from the Task abstract base type, which provides some functionality for us. When we derive from Task the only thing we are responsible for is providing an imlementation of the Execute method. This method takes no parameters and returns a boolean indicating if it was successful or not. If it throws an exception that is also interpreted as failure, unsurprisingly. We pass input to the task, and return output from the task by defining properties on the Task class. For output, we attach the `[Output]` attribute. We can attach the `[Required]` attribute to arguments that are mandatory; MSBuild will present a standard error if they are omitted.
 
+For our task, we need two inputs: the path to the folder where we will generate our outputfiles, and the list of resj files that we are going to process. These will be the `OutputPath` and `InputFiles` properties. When a property will be handling a collection of files, the property type should be `ITaskItem[]`. Our task will return two values: the list of C# code files that were generated and need to included in the compilation, and the list of resource files that were generated and need to be embedded in our assembly.
+
+The resource files will be creating using the `ResourceWriter` from the .NET base class library. We will generate C# in a very rudimetary way, using a StreamWriter. For this demonstration, the generated code is going to be ugly-formatted, to keep the code simple. Remember, the generated code won't be included in our source repository, so it doesn't matter what it looks like anyway.
+
 ``` CSharp
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -142,21 +146,25 @@ namespace JsonResource
 }
 ```
 
-This code should be pretty self explanatory. We define inputs and outputs to our task by creating properties on our C# class. We override the Task.Execute method to implement the logic of our task. Inside the Execute method we simply loop over all of the input files and generate some extremely poorly formatted C# code, and use the BCL ResourceWriter to create a .resources file. This gets compiled into a JsonResourceGenerator.dll assembly.
+This code should be pretty self explanatory. We are simply looping over the input resj files that were passed to us, and writing a C# code file, and resource file for each one. The structure of the generated code mimics the code that the resx code generated produces, so the result should feel familiar. I'm also omitting any error handling in this code for simplicity. It would be good to provide some amount of validation for the formatting of the json, for example.
 
 ## Invoking the build Task
 
-Now that we have created a simple MSBuild task to do the work, we can author some build scripts to actually wire this task into our build process. Typically, MSBuild scripts like this will be broken into two parts: a .props file that contains property and items definitions, and a .targets file that contains the task and targets definitions. The reason these are broken into two parts is because of how they get imported into the consuming project. The content of MSBuild scripts are processed in the order they are imported, and some definitions need to be included before others to satisfy dependencies.
+Now that we have created the task, we need to create the script to actually wire this task into our build process. Typically, MSBuild scripts like this will be broken into two parts: a .props file that contains property and items definitions, and a .targets file that contains the task and targets definitions. The reason these are broken into two parts is because of how they get imported into the consuming project. The content of MSBuild scripts are processed in the order they are imported, and some definitions need to be included before others to satisfy dependencies.
 
-Let's look at the targets file first. First we'll need a reference to the task we just wrote. We do this with the `UsingTask` element:
+Let's look at the targets file first, since it will dictate what we need to define in our props file. First we'll need a reference to the task we just wrote. We do this with the `UsingTask` element:
 
 `<UsingTask AssemblyFile="JsonResourceBuild.dll" TaskName="JsonResourceGenerator"/>`
 
-This will expose our task so we can invoke it in our target. The target itself will be defined in the same project. The important thing about defining a target to customize a build is figuring out where in the build process it needs to be invoked. For our target, we need to have it run before we call the C# compiler, because we are going to be generating code that we want to include in the compilation. We also need to run after the standard resource generation, because if we had any .resx files in our project we want them to be processed before us; the `ResGen` target is the target responsible for this. With that, we'll define our target, this element will include the tasks.
+This will expose our task so we can invoke it in our target. The target itself will be defined in the same file. The important thing about defining a target is figuring out where in the build process it needs to be invoked. For our target, we need to have it run before we call the C# compiler, because we are going to be generating code that we want to include in the compilation. The target that invokes the compiler is named "CoreCompile". I'm not sure if there is any documentation around the standard build targets, I've always figured this stuff out by simply looking at the build scripts that ship with MSBuild, and looking at build logs with diagnostic tracing enabled.
+
+ I also determined that it would be best to run after the standard resource target, `ResGen` is invoked. This target is responsible for producing a .resources file from a .resx input. The .resources file is the binary image that actually gets embedded in the assembly. We want to run after it runs, because of a detail in how it modifies some item groups that we want to stay out of the way of.
+ 
+ We can use the `AfterTargets` and `BeforeTargets` attributes to indicate to MSBuild where we want our target to be invoked in the build process. The name of the target serves no purpose other than allowing other targets to refer to it, and for logging output.
 
 `<Target Name="GenerateJsonResource" AfterTargets="ResGen" BeforeTargets="CoreCompile">`
 
-Our task required two inputs: a property containing the path to the directory where we'll write our output, and the items list containing the .resj files that we'll process. We also want to capture the output of our task.
+The task we created required two inputs: a property containing the path to the directory where we'll write our output, and the items list containing the .resj files that we'll process. We also want to capture the output of our task. The `$()` syntax is a Property reference, and the `@()` is an ItemGroup reference. These references will be defined in our .props file later. The output for our Task is defined using the Output element, which requires the name of the task property to capture, and the name of the item to put the output into.
 
 ``` xml
 <JsonResourceGenerator
@@ -168,7 +176,7 @@ Our task required two inputs: a property containing the path to the directory wh
 </JsonResourceGenerator>
 ```
 
-The `CodeGenerationRoot` property needs to be defined. We want all of our output files to be generated in a scratch location, so that it doesn't get included in source control. The standard build scripts include such a location, the "obj" folder. The path to this folder is defined as a path relative to the project folder, using the `IntermediateOutputPath` property. We can define this property inside of our target with this code:
+We haven't defined what these input properties contain yet. For the `CodeGenerationRoot` we want to use the "obj" folder, which is essentially a scratch area for temporary build files. By putting the files here we can ensure that they don't get added to source control, which was one of our goals. The path to this folder is defined as a path relative to the project folder, using the `IntermediateOutputPath` property. We can define this property inside of our target with this code:
 
 ``` xml
 <PropertyGroup>
@@ -176,7 +184,9 @@ The `CodeGenerationRoot` property needs to be defined. We want all of our output
 </PropertyGroup>
 ```
 
-This is enough to cause our task to be executed. However, we haven't told it anything about the `JsonResource` items, the .resj files that we want to process. Additionally, we need to make sure the C# files and resources that we generated are passed to the compiler. We pass the content to the compiler by including the files in the item groups that the compilation task processed. These item groups are `Compile` and `_CoreCompileResourceInputs`, these are defined in the standard `Microsoft.CSharp.Common.targets` MSBuild scripts.
+Typically, properties would be defined in a .props file, but we need to put this in the .targets file, because the `IntermediateOutputPath` won't be defined at the point that our .props file is imported; it is defined by the standard MSBuild scripts that get imported later. The `MSBuildProjectDirectory` is a [well-known MSBuild property](https://msdn.microsoft.com/en-us/library/ms164309.aspx). There are a number of well-known properties that are provided by the MSBuild runtime and will always be available.
+
+Our task will create some .cs and .resources files that we need to hand off to the C# compiler. We do this adding them to the `Compile` and `_CoreCompileResourceInputs`. The `Compile` item group should be familiar, as it is how all C# source files are included in a .csproj file. The `_CoreCompileResourceInputs` is an item group defined by Microsoft. The leading underscore makes me concerned that I shouldn't be using it directly, but it was the only way I found to include my own resources. This `<ItemGroup>` will be nested inside our Target, after the task is invoked.
 
 ``` xml
 <ItemGroup>
@@ -184,7 +194,7 @@ This is enough to cause our task to be executed. However, we haven't told it any
     <_CoreCompileResourceInputs Include="@(ResourceResFile)"/>
 </ItemGroup>
 ```
-That is everything that needs to be defined in the .targets file. In the .props file, we will define the items that will be processed as Json resources.
+That is everything that is required in the .targets file: invoking our task and passing the output to the compiler. All that is left is to define the inputs to our task, the .resj files. We do this in the .props file, by adding an `<ItemGroup>` element. The name of the element, `JsonResource` is the name we use to refer to this item group. The `Include` attribute value, `**\*.resj`, is a globbing path that will include all .resj files recursively in our project folder.
 
 ``` xml
 <ItemGroup>
@@ -192,11 +202,13 @@ That is everything that needs to be defined in the .targets file. In the .props 
 </ItemGroup>
 ```
 
-This will recursively include all .resj files that exist under our project folder. Note, that using a globbing path like this, means that .resj files will be processed, even if they aren't explicitly listed in our .csproj file. This is the "new normal" with the addition of the SDK feature in MSBuild. New style project files don't list all of the files explicitly anymore, but instead use globbing paths like this. This means that if you use an old style project, and exclude a .resj file that it will still be processesed. You would need to delete it from the file system, just something to be aware of.
+ This is the new, standard convention with the SDK based project system. SDK style project files don't list all of the files explicitly anymore, but instead use default globbing paths like this. This means that the csproj file doesn't need to change as often, so there's less code to merge.
 
-These are all the moving parts that we need to make this work in our build. However, the key piece of magic that I haven't discussed yet is how we get this to integrate with Intellisense. If we only include the pieces defined above, our build will produce the output that we expect, however we won't get Intellisense for the code that we are generating to expose our resources. This is a key feature that we get from .resx files, and we want to provide parity with that. 
+ ## Enabling Intellisense
 
-Up until recently, I didn't think this was even possible without using a SingleFileGenerator to integrate into Visual Studio. Then I stumbled upon a project doing something similar to what I wanted, [CodeGeneration.Roslyn](https://github.com/AArnott/CodeGeneration.Roslyn). This project allows you to write code generators that get attached to your existing C# code by adding attributes to your types that enables a pre-compilation rewriting. The thing that caught my eye was in the introductory paragraph: "generating new code that shows up to Intellisense as soon as the file is saved to disk". I poked around in the source for this project until I found the puzzle piece that enables this, in the props file for his project he includes the following metadata definition: `<Generator>MSBuild:GenerateCodeFromAttributes</Generator>`. This `Generator` metadata is something I've seen before, a it is also used to associate single file generators (custom tool). However, I'd never seen this magic prefix "MSBuild:" which appears to associate an MSBuild target to do the work.
+These are all the moving parts that we need to make this work in our build. However, the key piece of magic that I haven't discussed yet is how we get this to integrate with Intellisense. If we only include the pieces defined above, our build will produce the output that we expect, however we won't get Intellisense for the code that we are generating to expose our resources. This is a key feature that we get from .resx files, and we should expect that with the .resj format as well. 
+
+Up until recently, I didn't think this was even possible without creating a CustomTool to integrate into Visual Studio. Implementing a CustomTool, is much more involved than implementing MSBuild scripts, and also creates a dependency on Visual Studio, which would be good to avoid. I recently stumbled upon this project that was claiming to do exactly what I wanted: [CodeGeneration.Roslyn](https://github.com/AArnott/CodeGeneration.Roslyn). This project allows you to write code generators that get attached to your existing C# code by adding attributes to your types that enables a pre-compilation rewrite of the syntax tree. The thing that caught my eye was in the introductory paragraph: "generating new code that shows up to Intellisense as soon as the file is saved to disk". I poked around in the source for this project until I found the magic puzzle piece that enables this. In the props file for that project he includes the following metadata definition: `<Generator>MSBuild:GenerateCodeFromAttributes</Generator>`. This `Generator` metadata is something I've seen before, a it is also used to associate CustomTools with files. However, I'd never seen this magic prefix "MSBuild:" which appears to associate an MSBuild target to do the work. I suspect this is a new feature added to support the SDK project system, and might not work with old-style projects.
 
 With this new found knowledge I set out to apply it to my json resource generator.
 
@@ -208,13 +220,15 @@ With this new found knowledge I set out to apply it to my json resource generato
   </ItemDefinitionGroup>
   ```
 
-This says, add this Generator metadata to all items in the JsonResource item group, such that any time a .resj file is saved run the code generator. I thought this would just work as it was the same pattern I'd seen in this other project, sadly it didn't
+This says, add this Generator metadata to all items in the JsonResource item group, such that any time a .resj file is saved run the `GenerateJsonResourceCode` target. I thought this would just work, as it was the same pattern I'd seen in this other project. Sadly, it did not
 
 ## The Hack
 
-What project is complete without a hacky workaround? Dismayed that the `Generator` metadata didn't work like I expected, I poked and prodded to see if I could figure out how to trigger it. I discovered that if I applied the metadata to the `Compile` item group, that any time I modified a .cs file (which are included in the Compile group), it would regenerate the code. It still wouldn't regenerate when I modified a .resj file though. So, what if I include all the .resj files in the `Compile` group. Voila, this worked. However, I don't want to actually compile the .resj files, since they aren't C# code, they clearly can't be compiled. I just need them to bein this item group to trigger the code generator in VS.
+What project is complete without a hacky workaround? Dismayed that the `Generator` metadata didn't work like I expected, I experimented to see if I could figure out how to trigger it. I discovered that if I applied the metadata to the `Compile` item group, that any time I modified a .cs file (which are included in the Compile group), it would regenerate the code and I would see my generated code in Intellisense. It still wouldn't regenerate when I modified a .resj file though. The hack that I discovered is to include all the .resj files in the `Compile` group as well. Clearly we don't want to actually compile the .resj files, since they aren't C# code, they can't be compiled. But, they need to be in the Compile group in order for our target to be invoked by Visual Studio.
 
-The hack is to include them in the `Compile` item group, then after we generate the code remove them from `Compile` before we actually invoke the C# compile task. Our complete props and targets files end up looking like this:
+So, we'll add our `JsonResource` items to the `Compile` group, then remove them from the `Compile` group after we've generated our source code, but before the compiler actually runs.
+
+With that, our complete .props and .targets files look like the following:
 
 ### JsonResourceGenerator.props
 ``` xml
@@ -263,35 +277,51 @@ The hack is to include them in the `Compile` item group, then after we generate 
 </Project>
 ```
 
-I don't see any reason why this Generator metadata shouldn't work on user-defined Item types, but it currently doesn't appear to. Hopefully at some point in the future VS will be updated to support it, but until then I've got to live with this hack, oh well.
+I'm hoping that at some point I can discard this hack, because I worry that it might cause odd interactions with other build customizations, but for now it seems to get the job done.
 
-## Packaging with Nuget
+## Packaging with NuGet
 
-Nuget includes the ability to provide MSBuild scripts in your package. This is accomplished by including your scripts in a folder called "Build", and following a naming convention that allows the scripts to be handled automatically. The naming convention is [PackageName].(props|targets). The .props file will be automatically included at the top of the consuming project, and the .targets will be included at the end. Of course, if you have custom tasks, the assembly that implements them also needs to be included. This is done by providing explicit file defintions in a .nuspec file:
+Now that we have fully implemented the build script, we want to package it up to be easily reusable. We'll do this by creating a NuGet package.
+
+NuGet includes the ability to provide MSBuild scripts in your package. This is accomplished by including your scripts in a folder called "build", and following a naming convention that allows the scripts to be handled automatically. The naming convention is [PackageName].(props|targets). The .props file will be automatically included at the top of the consuming project, and the .targets will be included at the end. Of course, if you have custom tasks, the assembly that implement the tasks must also be included in the build folder so it can be referenced.
+
+Creating a NuGet package used to involve creating a `.nuspec` file that that would instruct nuget.exe how to assembly your package. This has been improved recently, and incorporated into the SDK project system. Now, we can define all of the package details within our csproj file instead. Microsoft has provided [fairly detailed documentation]([here](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj#nuget-metadata-properties) about the new MSBuild properties to control this.
+
+The new project system will produce a NuGet package without having to specify anything at all, but by default the output isn't going to be what we want. The default configuration will include our assembly in the package "lib" folder which will include our assembly as a reference in the consuming project. We don't want that.The consuming project shouldn't reference our assembly, we just want to modify their build process. To prevent our assembly from being referenced, we set the `IncludeBuildOutput` property to `false`. However, once we do that, we are entirely responsible for the file contents of our package. This was one detail that wasn't clearly spelled out in the documentation. This is accomplished by adding items to the `Content` item group and defining the `PackagePath` metadata to specify where the file should be packaged. There are a number of other properties that affect the packaging process. I'm only going to include the `Authors` and `Description` values for this example.
+
+The entire csproj for my project ends up looking like the following.
 
 ``` xml
-<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
-    <metadata>
-        <id>JsonResourceGenerator</id>
-        <version>0.1.0</version>
-        <description>Json Resource Generator</description>
-        <authors>Mark Pflug</authors>
-    </metadata>
-  <files>
-	  <file src="build\**" target="build" />
-      <file src="bin\Debug\net462\CodeGenerator.dll" target="build"/>
-      <file src="bin\Debug\net462\Newtonsoft.Json.dll" target="build"/>
-	</files>
-</package>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <AssemblyName>JsonResourceBuild</AssemblyName>
+    <Authors>Mark Pflug</Authors>
+    <Description>Json Resource DSL</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="build\*" PackagePath="build\" />
+    <Content Include="$(TargetPath)" PackagePath="build\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework" Version="15.3.409" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.3.409" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+  </ItemGroup>
+</Project>
 ```
+
+My props and targets files are in a build folder in my project, so I specify that they should be copied to the build folder of the package. I also copy the `$(TargetPath)` item which is the path the compiled assembly for our project. I can then invoke `dotnet pack` from the command line to cause my package to be build.
+
+As a tip, to test nuget packages before you publish them, you can define a local package source that is simply pointed to a directory location on your file system. You can use that source to test installation of your package. Note also, that you will need to delete your package from the local package cache in order to refresh. The local package cache is at `%userprofile%\.nuget\packages`. Simply delete the folder for you package from that folder to cause it to be pulled from your local repository instead.
 
 ## Conclusion
 
-I've used this .resj Json resource DSL as an example of how to create an "ideal DSL". The benefits over using .resx is that the .resj file is human-read/writable and the generated code doesn't need to be included in source control. It does this while continuing to integrate with Intellisense in Visual Studio.
+I've used this .resj Json resource DSL as an example of how to create what I consider an "ideal DSL". The benefits over using .resx is that the .resj file is human-read/writable and the generated code doesn't need to be included in source control. The resj file also doesn't require modifying the .csproj file, while .resx still do, even in the new SDK project system. It does this while continuing to integrate with Intellisense in Visual Studio.
 
-I really want to highlight that the important takeaway is that this demonstrates a technique for creating a DSL that can be delivered via nuget. The Json Resource Generator is just a simple example of what is possible.
+I really want to highlight that the important takeaway is that this demonstrates a technique for creating a DSL that can be delivered via nuget. The Json resource generator is just a simple demonstration of what is possible.
 
-At work, I have implemented a code generator that currently generates over 50k lines of code to define a data access layer. I implemented it as an SFG in a Visual Studio Integrated eXtension (VSIX). This has presented problems, because it requires that a developer install the VSIX, the 50k lines of code live in source control, and any time I want to modify the code-gen it requires that they update the VSIX and regenerate all of the code. Of course, this also means that Visual Studio is required for the code generator to even function. If I reimplement this using this new MSBuild DSL technique, all of these issues go away: 50k fewer lines in source control, can use any delopment environment that they want, and all a developer would need to do is update the nupkg and rebuild the solution. The only thing that would get modified in source, would be the version of the nupkg in the project file. This is the DSL utopia that I've been hoping for, and I can realize it *today*!
+For my employer, I have implemented a CustomTool code generator that currently generates over 50k lines of code to define a data access layer. I implemented it as a CustomTool (SingleFileGenerator) in a Visual Studio Integrated eXtension (VSIX). I did it this way, because exposing the data model to Intellisense was a primary goal. Unfortunately, this has presented problems, because it requires that a developer install the VSIX, the 50k lines of code live in source control, and any time I want to modify the code-generation process it requires that they update the VSIX and regenerate all of the code; which is a tedious set of steps. Of course, this also means that Visual Studio is required for the code generator to even function. If I were to reimplement this using this new MSBuild DSL technique, all of these issues go away: 50k fewer lines in source control, consumers can use any delopment environment that they want, and all a developer would need to do is update the nupkg and rebuild the solution to update to a new generator. The only thing that would get modified in source, would be the version of the nupkg in the project file. This is the DSL utopia that I've been hoping for, and I can finally realize it *today*!
 
 If you are using any code generation techniques, hopefully this has given you the tools to make it cleaner and easier to manage.
-
