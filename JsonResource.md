@@ -6,17 +6,17 @@ What are we going to build? Well, I've decided I don't like the resx file for re
 
 ## MSBuild Basics
 
-To understand how this works requires a bit of background in MSBuild. Unfortunatley, I've found that many .NET developers don't really know how MSBuild works. I've also found that most developers that *do* know how it works, wish they didn't, because it probably means they are responsible for managing a build system. If you've ever looked at the source for a csproj file (likely because you are diffing or merging it), then you've looked at an MSBuild script.
+To understand how this works requires a bit of background in MSBuild. Unfortunatley, I've found that many .NET developers don't really know how MSBuild works. I've also found that most developers that *do* know how it works, wish they didn't, because it probably means they are responsible for managing a complex build system. If you've ever looked at the source for a csproj file (likely because you are diffing or merging it), then you've looked at an MSBuild script.
 
-An MSBuild script is built from a small number of primitive types: the most important of these primitives are Properties, Items, Task, Targets, and Projects. Properties are roughly global variables that contain simple strings. Items are collections of objects, usually files. Tasks are individual units of work, usually implemented in a .NET assembly. Targets are essentially named functions that invoke tasks. Projects are the files that contain all these primitives, they usually have an extension like: .csproj, .targets, or props. When you invoke a build, you are telling MSBuild to invoke a specific target, usually by default, one named "Build". The standard "Build" target is defined by Microsoft as part of the common .NET MSBuild scripts. You normally get this target in your project by importing Microsoft.CSharp.targets. There are usually many targets in a build script, and these targets have dependencies. The targets are executed in topological order based on dependency. The Build target itself probably doesn't do anything, rather it has a series of other targets that it is dependent on, and these other targets are invoked prior to the Build target being run.
+An MSBuild script is just an xml file. It is constructe from a small number of primitive types: the most important of these primitives are: Properties, Items, Task, Targets, and Projects. Properties are roughly global variables that contain primivite values. Items are collections of objects, typically files. Tasks are individual units of work, most often implemented in a .NET assembly. Targets are essentially named functions that invoke tasks. Projects are the files that contain all these primitives, they usually have an extension like: .csproj, .targets, or .props. When you invoke a build, you are telling MSBuild to invoke a specific target, usually by default, one named "Build". The standard "Build" target is defined by Microsoft as part of the common .NET MSBuild scripts. You normally get this target in your project by importing Microsoft.CSharp.targets. There are usually many targets in a build script, and each target might have dependencies. The targets are executed in topological order based on dependency. The Build target itself probably doesn't do anything, rather it has a series of other targets that it is dependent on, and these other targets are invoked prior to the Build target being run.
 
-This design allows MSBuild scripts to be very easily extensible. If you want to run code at a specific step in the build process, you can define your own target and specify which targets it should run before and after, without having to edit the files that contain those other target definitions.
+This design allows MSBuild scripts to be very easily extensible. If you want to run code at a specific step in the build process, you can define your own target in your own project file, specify which targets it should run before and after, without having to edit the files that contain those other target definitions. This allows Microsoft to define the steps required to build the common 99% case, and allows us to customize it on a per-project basis without having to edit the scripts that Microsoft provided.
 
 ## Building the .RESJ DSL
 
-To create our DSL we are going to create an MSBuild task in a C# library, create some MSBuild scripts to invoke our task, and then package these up in a nuget package. By including this nuget package in our project we will be able to use our new resj DSL. 
+To create our DSL we are going to create an MSBuild task in a C# library, create some MSBuild scripts to invoke our task, and then package these up into a nuget package. By including this nuget package in our project we will be able to use our new resj DSL. 
 
-Create a new csharp class library project. Add nuget package references for Microsoft.Build.Framework and Microsoft.Build.Utilities.Core. These packages define the types we need to create our Task. Of course, we'll also grab Newtonsoft.Json, because what project would be complete without it, oh yeah, and we are going to be parsing JSON.
+We'll start by creating a new CSharp class library project. We'll need to add Nuget package references for Microsoft.Build.Framework and Microsoft.Build.Utilities.Core. These packages define the types we need to create our Task. Of course, we'll also grab Newtonsoft.Json, because what project would be complete without it. Oh yeah, and we are going to be parsing JSON.
 
 Our task is going to simultaneously generate C# code to access our resources, and generate the resources binary that will be embedded into our assembly.
 
@@ -25,14 +25,17 @@ Before we start looking at the implementation lets look at an example .resj file
 ```JSON
 {
   "Strings": {
-    "Form_Label_1": "Description",
-    "Form_Label_2": "Address"
+    "FormLabelDescription": "Description",
+    "FormLabelAddress": "Address"
   }
 }
 ```
+
+In this example, we are defining two string resources that will be used for labels on a form. I'm going to keep this example super-simple and just deal with string resources. Of course, a complete implementation should support file resources, icons, images, etc. 
+
 ## Building the Task
 
-We've simply defined a "Strings" object that maps from a key to a string value. As simple as it gets. I envision there being additional sections other than "Strings" for things like including other kinds of resources like files, or icons, etc. But for this initial example we'll keep it simple.
+The first thing we'll do is create our MSBuild Task. A Task is imply a class that implements the ITask interface. Usually, this is accomplished by deriving from the Task abstract base type, which provides some functionality for us. When we derive from Task the only thing we are responsible for is providing an imlementation of the Execute method. This method takes no parameters and returns a boolean indicating if it was successful or not. If it throws an exception that is also interpreted as failure, unsurprisingly. We pass input to the task, and return output from the task by defining properties on the Task class. For output, we attach the `[Output]` attribute. We can attach the `[Required]` attribute to arguments that are mandatory; MSBuild will present a standard error if they are omitted.
 
 ``` CSharp
 using Microsoft.Build.Framework;
@@ -46,6 +49,7 @@ namespace JsonResource
 {
     public class JsonResourceGenerator : Task
     {
+        [Required]
         // The folder where we will write all of our generated code.
         public String OutputPath { get; set; }
 

@@ -20,6 +20,25 @@ So, why doesn't .resx use an MSBuild task to generate the C# code as well? If it
 
 For Intellisense to function, the IDE needs to be able to read all of the source files for a project. The IDE doesn't do a full rebuild every time a file is changed. This would be way too slow, and would result in an unpleasant developmente experience. By generating output using an SFG, the output is regenerated any time the .resx is modified in Visual Studio. The output code file is then visible to the IDE and thus appears in the intellisense list. Since a full build isn't performed, your custom MSBuild tasks won't have a chance to run to produce their output. No output, no Intellisense.
 
+The final failing of resx files is the verbosity they add to the csproj file. Adding a single resx file will add thirteen lines to your csproj file. This is true for old-style as well as new-style "sdk" project files. These lines aren't particularly interesting to us, but are required to drive the Visual Studio project system.
+
+```xml
+  <ItemGroup>
+    <Compile Update="Resource1.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resource1.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resource1.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource1.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+```
+
 At least, that is what I thought. I submitted [a proposal to the C# compiler team](https://github.com/dotnet/roslyn/issues/14468) to suggest an improvement to these options, expanding upon a [generators feature](https://github.com/dotnet/roslyn/blob/master/docs/features/generators.md) that is on their proposed roadmap. I proposed this with the hope that in some utopian future I would be able to create a DSL with all the benefits but none of the drawbacks: I could build from the command line, none of the generated code would be source controlled, and I would get live Intellisense in Visual Studio. As it turns out, we already live in that Utopian future, I just didn't realize it.
 
 In my next post, I'll reveal how to implement a .resx style DSL for .NET that does just this.
