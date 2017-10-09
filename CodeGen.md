@@ -39,6 +39,6 @@ The final failing of resx files is the verbosity they add to the csproj file. Ad
   </ItemGroup>
 ```
 
-At least, that is what I thought. I submitted [a proposal to the C# compiler team](https://github.com/dotnet/roslyn/issues/14468) to suggest an improvement to these options, expanding upon a [generators feature](https://github.com/dotnet/roslyn/blob/master/docs/features/generators.md) that is on their proposed roadmap. I proposed this with the hope that in some utopian future I would be able to create a DSL with all the benefits but none of the drawbacks: I could build from the command line, none of the generated code would be source controlled, and I would get live Intellisense in Visual Studio. As it turns out, we already live in that Utopian future, I just didn't realize it.
+
 
 In my next post, I'll reveal how to implement a .resx style DSL for .NET that does just this.
