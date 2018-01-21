@@ -1,6 +1,14 @@
 # Domain Specific Languages and Code Generation in .NET
 
-C# is a great language. However, as a general purpose language, it can sometimes be tedious to express simple concepts. This is where we would often like to have a domain specific language (DSL) that is specially designed to express information more succinctly. As an example that most people would be familiar with, lets look at .resx files. A .resx file is a domain specific language for defining localized strings, and other types of resources. The implementation language is xml, but in reality no one looks at the raw xml, they use the Visual Studio resource design surface for authoring the resources, in essense a "visual DSL". I want to look at resx files, specifically, because I want to discuss some drawbacks to the way that they are implemented.
+C# is a great, general purpose language. However, as a general purpose language, it can sometimes be tedious and verbose to express what should be a simple concept. This is where we would often like to have a domain specific language (DSL) that is designed to express information more succinctly.
+
+There are examples of DSLs in .NET that most developers will already be familiar with, .xaml and .resx files. Both of these DSLs are based on XML, and are intended to support a graphical design surface to define part of the application. While they are both XML based, they have different capabilities.
+
+Xaml, of course, is typically used to define GUI elements in WPF or UWP applications. Xaml files, even when created using the Visual Studio designer, are pretty human readable. Being readable is an important feature when you need to do something that might be beyond the capabilities of the xaml designer. It is also important from the perspective that you need to be able to make sense of the file if you need to merge code changes in source control.
+
+Resx files are similar to Xaml in the sense that they are also xml files that are typically created using a design surface in Visual Studio.
+
+As an example that most people would be familiar with, lets look at .resx files. A .resx file is a domain specific language for defining localized strings, and other types of resources. The implementation language is xml, but in reality no one looks at the raw xml, they use the Visual Studio resource design surface for authoring the resources, in essense a "visual DSL". I want to look at resx files, specifically, because I want to discuss some drawbacks to the way that they are implemented.
 
 The .resx file uses the "Custom Tool" feature of Visual Studio, which is also known as a "Single File Generator" (SFG): the name of the API that is used to implement them. An SFG takes an input file, and produces a single output file. You can see the output file, as it is included in your project, nested underneath the input .resx file in the Solution Explorer.
 
