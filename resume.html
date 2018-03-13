@@ -2,51 +2,83 @@
 <head>
     <meta charset="UTF-8" />
     <title>Mark Pflug - Résumé</title>
-    <!-- Hello! -->
+    <!-- Hello there -->
     <style>
         body {
-            font-family: sans-serif;
+            font-family: Cambria, Arial, sans-serif;
             width: 42em;
             margin: 2em auto;
             border: 1px solid #e0e0e0;
             padding: 4em;
             color: #333;
+            font-size: large;
         }
 
         h1 {
+            font-family: Candara, Arial, sans-serif;
             font-variant: small-caps;
             text-align: center;
             font-size: 4em;
         }
 
-        h3 {
-            margin-left: 1em;
+        h2 {
+            text-decoration: underline;
         }
+
+
 
         h4 {
             margin-left: 2em;
         }
 
         a {
+            font-family: 'Segoe UI';
             text-decoration: none;
             color: #008;
         }
 
-            a:hover {
-                color: #44c;
-            }
+        a:hover {
+            color: #44c;
+        }
 
-        span.title {
-            color: rgb(143, 143, 209);
+        .skills li {
+            display: inline;
+            margin-right: 1em;
+        }
+
+        .exp {
+            display: inline-flex;
+            flex-direction: row;
+            flex-flow: row;
+            margin: 1em 0;
+            width: 100%;
+        }
+
+        h3 {
+            margin: 0;
+            display: inline-block;
+            text-align: left;
+            flex: 1;
+            vertical-align: bottom;
+        }
+
+        .title {
             font-weight: 700;
-            margin-left: 2.5em;
+            display: inline-block;
+            text-align: center;
+            flex: 1;
+            vertical-align: bottom;
         }
 
-        span.date {
+        .date {
             font-style: italic;
+            display: inline-block;
+            text-align: right;
+            flex: 1;
+            vertical-align: bottom;
         }
 
-        span.links {
+        .links {
             text-align: center;
         }
     </style>
@@ -55,10 +87,10 @@
 
     <h1>Mark Pflug</h1>
 
-    <span class="links">
+    <div class="links">
         <a href="mailto:mark.pflug@live.com">mark.pflug@live.com</a> -
         <a href="https://github.com/MarkPflug">https://github.com/MarkPflug</a>
-    </span>
+    </div>
 
     <h2>Profile</h2>
 
@@ -67,21 +99,19 @@
 
         While primarily focusing on the Microsoft development stack I have gained a deep knowledge of SQL Server and C# development on the .NET framework.
 
-        I have developed desktop applications, server and client side web application, database applications, and written reusable library code.
+        I have developed desktop applications, server and client side web application, database applications, and written many reusable libraries.
 
         Beyond development, I have extensive experience with build automation and dev ops.
 
         Extensive experience with optimization of both SQL server databases and server application code.
-
     </p>
     <p>
-        I have contributed to several open source projects, including having pull requests accepted to the .NET Framework and Newtonsoft.JSON.
-
+        I have contributed to several open source projects, including accepted pull requests to the .NET Framework (corefx) and Newtonsoft.JSON. I maintain a few  open source nuget packages.
     </p>
 
     <h2>Skills</h2>
 
-    <ul>
+    <ul class="skills">
         <li>C#</li>
         <li>SQL</li>
         <li>MSBuild</li>
@@ -93,9 +123,11 @@
 
     <h2>Experience</h2>
 
-    <h3>Huron Consulting Group</h3>
-    <span class="title">Software Architect</span><br />
-    <span class="date">Apr 2012</span> - <span class="date">Present</span><br />
+    <div class="exp">
+        <h3>Huron Consulting Group</h3>
+        <span class="title">Software Architect</span>
+        <span class="date">Apr 2012 - Present</span>
+    </div>
 
     <p>
         Developed and maintained a proprietary application development framework which provided an object relational data model for application developers.
@@ -123,11 +155,13 @@
         Presented annually at developers converence to an audience of customer developers.
     </p>
 
-    <h3>SoftSource Consulting</h3>
-    <span class="title">Software Architect</span><br />
-    Oct 2005 - Jan 2012<br />
+    <div class="exp">
+        <h3>SoftSource Consulting</h3>
+        <span class="title">Software Architect</span>
+        <span class="date">Oct 2005 - Jan 2012</span>
+    </div>
     <p>
-        As a consultant a SoftSource, Mark had the opportunity to work on many different customer projects. These projects included developing data processing tools, business facing web applications, and consumer facing desktop applications.
+        As a consultant a SoftSource, I had the opportunity to work on many different customer projects. These projects included developing data processing tools, business facing web applications, and consumer facing desktop applications.
     </p>
 
     <h4>Intel</h4>
@@ -149,9 +183,11 @@
         Primary developer on application used to calculate shipping costs of negotiated carrier contracts. Redesigned a clumsy WinForms UI with a web based UI that allowed staff to enter contract data in a format that closely matched the source contract layout.
     </p>
 
-    <h3>Webridge, Inc</h3>
-    <span class="title">Developer Intern</span><br />
-    <span class="date">Oct 1999</span> - <span class="date">Apr 2001</span><br />
+    <div class="exp">
+        <h3>Webridge, Inc</h3>
+        <span class="title">Developer Intern</span>
+        <span class="date">Oct 1999 - Apr 2001</span>
+    </div>
     <p>
         As a developer intern at Webridge Mark worked on several customer projects primarily focused on client-side Web UIs.
     </p>
