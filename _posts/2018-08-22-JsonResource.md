@@ -1,10 +1,10 @@
 ---
 layout: post
-title:  "Building a Better Resources File"
+title:  "Domain Specific Language in dotNET"
 date:   2018-08-22 17:23:17 -0700
 ---
 
-# Building a Better Resources File
+# Domain Specific Language in dotNET
 
 In my previous post I discussed some approaches to creating a DSL in .NET. Specifically, I looked at the .resx file as an example, and described some of the issues with how they are implemented. In this article I want to take a look at a better way to implement DSLs in dotnet. Since I've decided I don't like the resx file for reasons I explained in the previous post, I'd like to take a look at implementing a replacement. If I was adventurous I could create my own domain specific language with a lexer and a parser and implement some code to transform it into C#, but that is beyond the scope of what I want to demonstrate here. So instead, I'm going to use JSON and create a "Json resources file" .resj. What the DSL is used for, and the source language of the DSL aren't the important point. The important point is the technique for integrating it in MSBuild and Visual Studio. In this way, we can apply this technique to any DSL.
 
