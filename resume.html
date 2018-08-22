@@ -1,0 +1,195 @@
+﻿<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Mark Pflug - Résumé</title>
+    <!-- Hello there -->
+    <style>
+        body {
+            font-family: Cambria, Arial, sans-serif;
+            width: 42em;
+            margin: 2em auto;
+            border: 1px solid #e0e0e0;
+            padding: 4em;
+            color: #333;
+            font-size: large;
+        }
+
+        h1 {
+            font-family: Candara, Arial, sans-serif;
+            font-variant: small-caps;
+            text-align: center;
+            font-size: 4em;
+        }
+
+        h2 {
+            text-decoration: underline;
+        }
+
+
+
+        h4 {
+            margin-left: 2em;
+        }
+
+        a {
+            font-family: 'Segoe UI';
+            text-decoration: none;
+            color: #008;
+        }
+
+        a:hover {
+            color: #44c;
+        }
+
+        .skills li {
+            display: inline;
+            margin-right: 1em;
+        }
+
+        .exp {
+            display: inline-flex;
+            flex-direction: row;
+            flex-flow: row;
+            margin: 1em 0;
+            width: 100%;
+        }
+
+        h3 {
+            margin: 0;
+            display: inline-block;
+            text-align: left;
+            flex: 1;
+            vertical-align: bottom;
+        }
+
+        .title {
+            font-weight: 700;
+            display: inline-block;
+            text-align: center;
+            flex: 1;
+            vertical-align: bottom;
+        }
+
+        .date {
+            font-style: italic;
+            display: inline-block;
+            text-align: right;
+            flex: 1;
+            vertical-align: bottom;
+        }
+
+        .links {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Mark Pflug</h1>
+
+    <div class="links">
+        <a href="mailto:mark.pflug@live.com">mark.pflug@live.com</a> -
+        <a href="https://github.com/MarkPflug">https://github.com/MarkPflug</a>
+    </div>
+
+    <h2>Profile</h2>
+
+    <p>
+        With more than 15 years of experience I have worked with a number of high profile companies on a variety of challenging projects.
+
+        While primarily focusing on the Microsoft development stack I have gained a deep knowledge of SQL Server and C# development on the .NET framework.
+
+        I have developed desktop applications, server and client side web application, database applications, and written many reusable libraries.
+
+        Beyond development, I have extensive experience with build automation and dev ops.
+
+        Extensive experience with optimization of both SQL server databases and server application code.
+    </p>
+    <p>
+        I have contributed to several open source projects, including accepted pull requests to the .NET Framework (corefx) and Newtonsoft.JSON. I maintain a few  open source nuget packages.
+    </p>
+
+    <h2>Skills</h2>
+
+    <ul class="skills">
+        <li>C#</li>
+        <li>SQL</li>
+        <li>MSBuild</li>
+        <li>ASP.NET</li>
+        <li>MVC</li>
+        <li>WPF</li>
+        <li>git</li>
+    </ul>
+
+    <h2>Experience</h2>
+
+    <div class="exp">
+        <h3>Huron Consulting Group</h3>
+        <span class="title">Software Architect</span>
+        <span class="date">Apr 2012 - Present</span>
+    </div>
+
+    <p>
+        Developed and maintained a proprietary application development framework which provided an object relational data model for application developers.
+    </p>
+    <p>
+        Primary developer of Visual Studio integrated toolset to replace proprietary legacy development stack.
+
+        Visual Studio extension provided a graphical design surface for designing data models and workflow development.
+
+        This allowed application developers to write strongly-typed C# code against C# classes which were auto-generated from the data models.
+
+        The C# application code tightly integrated with legacy JavaScript codebase via runtime interop layer, allowing incremental adoption and migration of legacy code.
+
+        This design allowed hot-paths in the application code to be implemented in C# code which improved application performance, and allowed developers to work in a modern development environment with Intellisense and integrated help system.
+
+        Developed API documentation that integrated with Visual Studio help system.
+    </p>
+    <p>
+        Developed framework to support automated testing of application layer code and introduced unit testing practices to development teams that previously had no automated testing. Helped write a suite of unit tests for framework layer code.
+    </p>
+    <p>
+        Developed and maintained a complex continuous integration build environment, which included an extensive integration test suite with code coverage reports.
+    </p>
+    <p>
+        Presented annually at developers converence to an audience of customer developers.
+    </p>
+
+    <div class="exp">
+        <h3>SoftSource Consulting</h3>
+        <span class="title">Software Architect</span>
+        <span class="date">Oct 2005 - Jan 2012</span>
+    </div>
+    <p>
+        As a consultant a SoftSource, I had the opportunity to work on many different customer projects. These projects included developing data processing tools, business facing web applications, and consumer facing desktop applications.
+    </p>
+
+    <h4>Intel</h4>
+    <p>Developed prototype applications for Intel's Tangent Bay proof-of-concept laptops. Included a music catalog application and Facebook feed application developed in WPF to run in the Tangent Bay's secondary display area. Both were touch interactive applications that featured animated 3D graphics.</p>
+
+    <h4>Nike</h4>
+    <p>Primary developer on initial version of Nike product catalog builder software. The tool was develeoped to replace expensive, licensed third-party tools used by the product sales and marketing staff to create print catalogs. Developed as a web UI to allow rapid layout of a product catalog and produced print-ready PDF documents.</p>
+
+    <h4>NWEA</h4>
+    <p>Developed systems to process standardized test results. Wrote a custom library to read FoxPro data sources and load data into SQL Server, which greatly improved processing throughput.</p>
+
+    <h4>Web MD</h4>
+    <p>
+        Contributor on WebMD's Health Quotient project, a web based product that was used to provide a health screening report and advise users on health improvement programs.
+    </p>
+
+    <h4>AFMS</h4>
+    <p>
+        Primary developer on application used to calculate shipping costs of negotiated carrier contracts. Redesigned a clumsy WinForms UI with a web based UI that allowed staff to enter contract data in a format that closely matched the source contract layout.
+    </p>
+
+    <div class="exp">
+        <h3>Webridge, Inc</h3>
+        <span class="title">Developer Intern</span>
+        <span class="date">Oct 1999 - Apr 2001</span>
+    </div>
+    <p>
+        As a developer intern at Webridge Mark worked on several customer projects primarily focused on client-side Web UIs.
+    </p>
+</body>
+</html>
