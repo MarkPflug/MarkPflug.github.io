@@ -45,7 +45,7 @@ For our task, we need two inputs: the path to the folder where we will generate 
 
 The resource files will be creating using the `ResourceWriter` from the .NET base class library. We will generate C# in a very rudimetary way, using a StreamWriter. For this demonstration, the generated code is going to be ugly-formatted, to keep the code simple. Remember, the generated code won't be included in our source repository, so it doesn't matter what it looks like anyway.
 
-``` CSharp
+``` C#
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Newtonsoft.Json.Linq;
