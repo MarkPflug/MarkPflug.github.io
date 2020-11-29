@@ -25,7 +25,7 @@ Add a custom target to the analyzer project:
   </Target>
 ```
 
-The first thing this does is validate that the code analysis assembly name is the same name that we define in the global targets. This will report an error that would cause things to fail if the project was renamed, for example. This is simply to save us from debugging the build if something changes in the future.
+The first thing this does is validate that the code analysis assembly name is the same name that we define in the global targets. This will report an error that would cause things to fail if the project was renamed, for example. This saves us from debugging the build if the name changes in the future.
 
 This target will create a folder, defined by the `LibFolder` property, to hold the analyzer. The `LibFolder` property will be defined in the next step. It then copies the analyzer dll (`TargetPath`) to that folder.
 
